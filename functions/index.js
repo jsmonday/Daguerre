@@ -4,10 +4,9 @@ const { tmpDir, join } = require("os");
 const { dirname }      = require("path");
 const sharp            = require("sharp");
 const fs               = require("fs-extra");
-const gcs              = Storage();
 
 const resizeImg = functions.storage.object().onFinalize(async (object) => {
-  const bucket    = gcs.bucket(object.bucket);
+  const bucket    = object.bucket;
   const filePath  = object.name;
   const fileName  = filePath.split("/").pop();
   const bucketDir = dirname(filePath);
@@ -23,7 +22,7 @@ const resizeImg = functions.storage.object().onFinalize(async (object) => {
   await fs.ensureDir(workingDir);
   await bucket.file(filePath).download({ destination: tmpFilePath });
 
-  const sizes = [1920, 100];
+  const sizes = [ 1920, 720, 100 ];
 
   const uploadPromises = sizes.map(async (size) => {
     const imgName = `${fileName}@${size}`;
@@ -40,3 +39,5 @@ const resizeImg = functions.storage.object().onFinalize(async (object) => {
   return fs.remove(workingDir);
 
 });
+
+module.exports = resizeImg
