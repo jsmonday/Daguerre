@@ -1,19 +1,25 @@
-const functions        = require("firebase-functions");
-const { tmpDir, join } = require("os");
-const { dirname }      = require("path");
-const sharp            = require("sharp");
-const fs               = require("fs-extra");
+const functions         = require("firebase-functions");
+const { tmpdir }        = require("os");
+const { Storage }       = require("@google-cloud/storage");
+const { dirname, join } = require("path");
+const sharp             = require("sharp");
+const fs                = require("fs-extra");
+const gcs               = new Storage();
 
-const resizeImg = functions.storage.object().onFinalize(async (object) => {
-  const bucket    = object.bucket;
+exports.resizeImg = functions
+                  .runWith({ memory: "2GB", timeoutSeconds: 120 })
+                  .storage
+                  .object()
+                  .onFinalize(async (object) => {
+  const bucket    = gcs.bucket(object.bucket);
   const filePath  = object.name;
   const fileName  = filePath.split("/").pop();
   const bucketDir = dirname(filePath);
 
-  const workingDir  = join(tmpDir(), "resize");
+  const workingDir  = join(tmpdir(), "resize");
   const tmpFilePath = join(workingDir, "source.png");
 
-  if (fileName.includes("r@") || !object.contentType.includes("image")) {
+  if (fileName.includes("@") || !object.contentType.includes("image")) {
     console.log(`Exiting function`);
     return false;
   }
@@ -24,8 +30,10 @@ const resizeImg = functions.storage.object().onFinalize(async (object) => {
   const sizes = [ 1920, 720, 100 ];
 
   const uploadPromises = sizes.map(async (size) => {
-    const imgName = `${fileName}@${size}`;
-    const imgPath = join(workingDir, imgName);
+    const ext        = imgName.split('.').pop();
+    const imgName    = fileName.replace(ext, "");
+    const newImgName = `${fileName}@s_${size}.${ext}`;
+    const imgPath    = join(workingDir, newImgName);
     await sharp(tmpFilePath).resize({ width: size }).toFile(imgPath);
 
     return bucket.upload(imgPath, {
@@ -38,5 +46,3 @@ const resizeImg = functions.storage.object().onFinalize(async (object) => {
   return fs.remove(workingDir);
 
 });
-
-module.exports = resizeImg
