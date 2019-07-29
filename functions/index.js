@@ -19,8 +19,10 @@ exports.resizeImg = functions
   const workingDir  = join(tmpdir(), "resize");
   const tmpFilePath = join(workingDir, "source.png");
 
-  if (fileName.includes("@") || !object.contentType.includes("image")) {
-    console.log(`Exiting function`);
+  console.log(`Got ${fileName} file`);
+
+  if (fileName.includes("@s_") || !object.contentType.includes("image")) {
+    console.log(`Already resized. Exiting function`);
     return false;
   }
 
@@ -30,15 +32,21 @@ exports.resizeImg = functions
   const sizes = [ 1920, 720, 100 ];
 
   const uploadPromises = sizes.map(async (size) => {
-    const ext        = imgName.split('.').pop();
-    const imgName    = fileName.replace(ext, "");
-    const newImgName = `${fileName}@s_${size}.${ext}`;
+
+    console.log(`Resizing ${fileName} at size ${size}`);
+
+    const ext        = fileName.split('.').pop();
+    const imgName    = fileName.replace(`.${ext}`, "");
+    const newImgName = `${imgName}@s_${size}.${ext}`;
     const imgPath    = join(workingDir, newImgName);
     await sharp(tmpFilePath).resize({ width: size }).toFile(imgPath);
 
+    console.log(`Just resized ${newImgName} at size ${size}`);
+
     return bucket.upload(imgPath, {
-      destination: join(bucketDir, imgName)
+      destination: join(bucketDir, newImgName)
     });
+
   });
 
   await Promise.all(uploadPromises);
