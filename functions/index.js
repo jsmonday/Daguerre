@@ -1,5 +1,4 @@
 const functions        = require("firebase-functions");
-const Storage          = require("@google-cloud/storage");
 const { tmpDir, join } = require("os");
 const { dirname }      = require("path");
 const sharp            = require("sharp");
