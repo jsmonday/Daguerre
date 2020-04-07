@@ -17,7 +17,7 @@ exports.resizeImg = functions
   const bucketDir = dirname(filePath);
 
   const workingDir  = join(tmpdir(), "resize");
-  const tmpFilePath = join(workingDir, "source.png");
+  const tmpFilePath = join(workingDir, fileName);
 
   console.log(`Got ${fileName} file`);
 
